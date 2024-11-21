@@ -21,5 +21,8 @@ export function loginUser(user: User, onResult: SessionCallback, onError: ErrorC
                 const error = await response.json() as CustomError;
                 onError(error);
             }
-        }, onError);
+        })
+        .catch((error) => {
+            onError(new CustomError(error.message || "Network error"));
+        });
 }
