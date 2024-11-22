@@ -7,16 +7,18 @@ export default function MessageList({ selectedChat }) {
 
     const handleSendMessage = async () => {
         if (newMessage.trim()) {
+            // Ensure you are passing both sender and receiver
             const messageData = {
-                sender: "You", 
+                sender: "You",                // The sender is hardcoded to "You", change this if you have user data
+                receiver: selectedChat.receiver, // Ensure `receiver` exists in `selectedChat`
                 text: newMessage,
-                // Assuming selectedChat has the ID or some identifier
-                chatId: selectedChat.id, 
-                date: new Date().toISOString(), // You can format this as needed
+                chatId: selectedChat.id,      // Chat ID should be from the selectedChat
+                date: new Date().toISOString(),
             };
-            
+
+            console.log("Sending message:", messageData); // Check what you're sending
+
             try {
-                // Send message to the serverless function
                 const response = await fetch('/api/messages', {
                     method: 'POST',
                     headers: {
@@ -24,12 +26,15 @@ export default function MessageList({ selectedChat }) {
                     },
                     body: JSON.stringify(messageData),
                 });
-   
+
                 const data = await response.json();
-                
+                console.log("Response from server:", data); // Check server response
+
                 if (response.ok) {
-                    // Add the message to the local state after successful sending
-                    setMessages([...messages, { id: messages.length + 1, ...messageData }]);
+                    setMessages(prevMessages => [
+                        ...prevMessages,
+                        { id: data.id, sender: "You", text: data.text, date: data.date }
+                    ]);
                     setNewMessage(""); // Reset message input
                 } else {
                     console.error("Error sending message:", data.message);
@@ -39,7 +44,6 @@ export default function MessageList({ selectedChat }) {
             }
         }
     };
-   
 
     return (
         <Box>
