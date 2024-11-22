@@ -10,12 +10,10 @@ export default async (req, res) => {
       return res.status(401).json({ error: "User not connected" });
     }
 
-    const { recipientId, message } = req.body;
-    if (!recipientId || !message) {
-      return res.status(400).json({ error: "Invalid request data" });
+    const { roomId, message } = req.body;
+    if (!roomId || !message) {
+      return res.status(400).json({ error: "roomId and message are required" });
     }
-
-    const conversationId = generateConversationId(user.id, recipientId);
 
     const newMessage = {
       text: message,
@@ -25,8 +23,11 @@ export default async (req, res) => {
 
     try {
       const serializedMessage = JSON.stringify(newMessage);
-      console.log("Serialized message being stored in Redis:", serializedMessage); // Log avant stockage
-      await redis.rpush(`conversation:${conversationId}`, serializedMessage);
+      console.log("Serialized message stored in Redis:", serializedMessage);
+
+      // Ajouter le message dans Redis
+      await redis.rpush(`room:${roomId}:messages`, serializedMessage);
+      console.log(`Message stored in Redis for room:${roomId}:`, serializedMessage);
 
       res.status(201).json({ success: true, message: newMessage });
     } catch (redisError) {
@@ -34,11 +35,7 @@ export default async (req, res) => {
       res.status(500).json({ error: "Failed to save message to Redis" });
     }
   } catch (error) {
-    console.error("Error sending message:", error);
+    console.error("Error sending room message:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
-function generateConversationId(userId1, userId2) {
-  return [userId1, userId2].sort().join('-');
-}

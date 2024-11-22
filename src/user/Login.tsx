@@ -1,75 +1,82 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
+import React, { useState } from "react";
 import { loginUser } from "./loginApi";
-import { Session } from "../model/common";
 import { CustomError } from "../model/CustomError";
-import { TextField, Button, Typography, Container, Box } from "@mui/material";
+import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 export function Login() {
-    const [error, setError] = useState<CustomError | null>(null);
-    const [session, setSession] = useState<Session | null>(null);
-    const navigate = useNavigate(); // Initialize the navigate function
+  const [error, setError] = useState<string>("");
+  const navigate = useNavigate(); // Utiliser useNavigate pour la redirection
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const user = {
-            username: formData.get('username') as string,
-            password: formData.get('password') as string,
-        };
-
-        loginUser(user, 
-            (result: Session) => {
-                setSession(result);
-                setError(null);
-                // After successful login, redirect to /chat
-                navigate("/chat");
-            }, 
-            (err: CustomError) => {
-                setError(err);
-                setSession(null);
-            });
-    };
-
-    return (
-        <Container component="main" maxWidth="xs" sx={{ mt: 20 }}>
-            <Box sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                padding: 2,
-                border: '1px solid #ddd',
-                borderRadius: 2,
-                boxShadow: 2
-            }}>
-                <Typography variant="h5" gutterBottom>Login</Typography>
-
-                <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
-                            name="username"
-                            label="Username"
-                            variant="outlined"
-                            fullWidth
-                            required
-                        />
-                        <TextField
-                            name="password"
-                            label="Password"
-                            variant="outlined"
-                            type="password"
-                            fullWidth
-                            required
-                        />
-                        <Button type="submit" variant="contained" color="primary" fullWidth>
-                            Login
-                        </Button>
-                    </Box>
-                </form>
-
-                {session && <Typography variant="body2" color="green" sx={{ mt: 2 }}>Welcome back, {session.username}!</Typography>}
-                {error && <Typography variant="body2" color="error" sx={{ mt: 2 }}>{error.message}</Typography>}
-            </Box>
-        </Container>
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    
+    // Appeler loginUser et gérer l'état en fonction du résultat
+    loginUser(
+      {
+        user_id: -1,
+        username: (formData.get("login") as string) || "",
+        password: (formData.get("password") as string) || "",
+      },
+      (session) => {
+        console.log(session);
+        setError("");
+        // Rediriger vers la page de messages après une connexion réussie
+        navigate("/messages");
+      },
+      (loginError) => {
+        console.log(loginError);
+        setError(loginError.message || "Erreur de connexion");
+      }
     );
+  };
+
+  return (
+    <Container maxWidth="xs" style={{ marginTop: "100px" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: 3,
+          boxShadow: 3,
+          borderRadius: 2,
+          bgcolor: "background.paper",
+        }}
+      >
+        <Typography component="h1" variant="h5" sx={{ marginBottom: 2 }}>
+          UBO Relay Chat
+        </Typography>
+        <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+          <TextField
+            variant="outlined"
+            margin="normal"
+            required
+            fullWidth
+            label="Identifiant"
+            name="login"
+            autoFocus
+          />
+          <TextField
+            variant="outlined"
+            margin="normal"
+            required
+            fullWidth
+            label="Mot de passe"
+            type="password"
+            name="password"
+          />
+          <Button type="submit" fullWidth variant="contained" color="primary" sx={{ mt: 2, mb: 2 }}>
+            Connexion
+          </Button>
+        </form>
+        {error && (
+          <Typography color="error" sx={{ mt: 1 }}>
+            {error}
+          </Typography>
+        )}
+      </Box>
+    </Container>
+  );
 }
