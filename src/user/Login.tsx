@@ -56,7 +56,6 @@ export function Login() {
             fullWidth
             label="Identifiant"
             name="login"
-            autoFocus
           />
           <TextField
             variant="outlined"
