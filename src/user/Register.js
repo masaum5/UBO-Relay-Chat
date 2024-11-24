@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Box, Button, Container, TextField, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from './registerApi';
+import { Link } from 'react-router-dom';  // Add this import
+
 
 export const Register = () => {
   const [username, setUsername] = useState('');
@@ -80,6 +82,14 @@ export const Register = () => {
             {error}
           </Typography>
         )}
+
+                {/* Add the phrase with the link to the Login page */}
+          <Typography variant="body2" sx={{ mt: 2 }}>
+          Vous avez déjà un compte ?{" "}
+          <Link to="/login" style={{ textDecoration: "none" }}>
+            Connectez-vous
+          </Link>
+        </Typography>
       </Box>
     </Container>
   );

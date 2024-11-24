@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { loginUser } from "./loginApi";
-import { CustomError } from "../model/CustomError";
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { Link } from 'react-router-dom';  // Add this import
+
 
 export function Login() {
   const [error, setError] = useState<string>("");
@@ -76,6 +77,14 @@ export function Login() {
             {error}
           </Typography>
         )}
+
+         {/* Add the phrase with the link to the Register page */}
+         <Typography variant="body2" sx={{ mt: 2 }}>
+          Pas encore de compte ?{" "}
+          <Link to="/register" style={{ textDecoration: "none" }}>
+            Créez un compte
+          </Link>
+        </Typography>
       </Box>
     </Container>
   );
