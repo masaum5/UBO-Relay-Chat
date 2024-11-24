@@ -1,98 +1,106 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
-import { Box, Container, TextField, Button, Typography, Divider } from '@mui/material';
-import UserList from './components/UserList';
-import RoomList from './components/RoomList';
+import React, { useState, useEffect } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
+import { Box, Container, Typography, Divider, CircularProgress } from "@mui/material";
+import UserList from "./components/UserList";
+import RoomList from "./components/RoomList";
 
 const Messages = () => {
-  const [users, setUsers] = useState([]); // Liste des utilisateurs
-  const [rooms, setRooms] = useState([]); // Liste des salons
-  const [error, setError] = useState(null);
-  const [message, setMessage] = useState(''); // Contenu du message
+  const [users, setUsers] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  const [userError, setUserError] = useState(null);
+  const [roomError, setRoomError] = useState(null);
   const navigate = useNavigate();
 
+  const refreshAccessToken = async () => {
+    try {
+      const refreshToken = sessionStorage.getItem("refresh_token");
+      if (!refreshToken) {
+        navigate("/login");
+        return null;
+      }
+
+      const response = await fetch("/api/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!response.ok) {
+        navigate("/login");
+        return null;
+      }
+
+      const data = await response.json();
+      sessionStorage.setItem("token", data.access_token);
+      return data.access_token;
+    } catch (error) {
+      console.error("Error refreshing token:", error.message);
+      navigate("/login");
+      return null;
+    }
+  };
+
+  const fetchData = async (endpoint, setData, setError, setLoading) => {
+    try {
+      let token = sessionStorage.getItem("token");
+      if (!token) {
+        setError("Vous devez être connecté.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+
+      if (response.status === 401) {
+        console.warn("Token expired. Refreshing...");
+        token = await refreshAccessToken();
+        if (!token) {
+          setError("Session expirée. Veuillez vous reconnecter.");
+          setLoading(false);
+          return;
+        }
+        return fetchData(endpoint, setData, setError, setLoading); // Retry fetch
+      }
+
+      if (!response.ok) {
+        setError("Impossible de récupérer les données.");
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setData(data);
+      setError(null);
+    } catch (error) {
+      setError("Erreur lors du chargement des données.");
+      console.error("API error:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Fetch les utilisateurs
-    const fetchUsers = async () => {
-      try {
-        const token = sessionStorage.getItem('token');
-        if (!token) {
-          setError('Vous devez être connecté pour voir les utilisateurs.');
-          return;
-        }
-
-        const response = await fetch('/api/users', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUsers(data);
-        } else {
-          throw new Error('Erreur lors de la récupération des utilisateurs');
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-        setError('Impossible de charger les utilisateurs.');
-      }
-    };
-
-    //Fetch les salons
-    const fetchRooms = async () => {
-      try {
-        const token = sessionStorage.getItem('token');
-        if (!token) {
-          setError('Vous devez être connecté pour voir les salons.');
-          return;
-        }
-    
-        const response = await fetch('/api/rooms', {
-          headers: {
-            Authorization: `Bearer ${token}`, // Utilisez des backticks pour inclure le token
-            'Content-Type': 'application/json',
-          },
-        });
-    
-        if (response.ok) {
-          const data = await response.json();
-          setRooms(data); // Mettre à jour la liste des salons
-        } else {
-          throw new Error('Erreur lors de la récupération des salons');
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-        setError('Impossible de charger les salons.');
-      }
-    };
-
-    fetchUsers();
-    fetchRooms();
+    fetchData("/api/users", setUsers, setUserError, setIsLoadingUsers);
+    fetchData("/api/rooms", setRooms, setRoomError, setIsLoadingRooms);
   }, []);
 
-  const handleUserSelect = (id) => {
-    navigate(`/messages/user/${id}`); // Naviguer vers la conversation de l'utilisateur
-  };
-
-  const handleRoomSelect = (id) =>{
-    navigate(`/messages/room/${id}`);
-  }
-
-  const handleSendMessage = () => {
-    // Ajouter votre logique pour envoyer un message global ou une autre action
-    console.log('Message envoyé:', message);
-    setMessage('');
-  };
+  const handleUserSelect = (userId) => navigate(`/messages/user/${userId}`);
+  const handleRoomSelect = (roomId) => navigate(`/messages/room/${roomId}`);
 
   return (
-    <Container maxWidth="lg" style={{ display: 'flex', marginTop: '20px' }}>
-      {/* Liste des utilisateurs et des salons */}
-      <Box sx={{ width: '25%', paddingRight: 2, borderRight: '1px solid #ddd' }}>
+    <Container maxWidth="lg" sx={{ display: "flex", marginTop: "20px" }}>
+      <Box sx={{ width: "25%", paddingRight: 2, borderRight: "1px solid #ddd" }}>
         <Typography variant="h6">Utilisateurs</Typography>
-        {error ? (
-          <Typography color="error">{error}</Typography>
+        {isLoadingUsers ? (
+          <CircularProgress />
+        ) : userError ? (
+          <Typography color="error">{userError}</Typography>
+        ) : users.length === 0 ? (
+          <Typography>Aucun utilisateur trouvé.</Typography>
         ) : (
           <UserList users={users} onUserSelect={handleUserSelect} />
         )}
@@ -100,33 +108,19 @@ const Messages = () => {
         <Divider sx={{ my: 2 }} />
 
         <Typography variant="h6">Salons</Typography>
-        {error ? (
-          <Typography color="error">{error}</Typography>
+        {isLoadingRooms ? (
+          <CircularProgress />
+        ) : roomError ? (
+          <Typography color="error">{roomError}</Typography>
+        ) : rooms.length === 0 ? (
+          <Typography>Aucun salon disponible.</Typography>
         ) : (
           <RoomList rooms={rooms} onRoomSelect={handleRoomSelect} />
         )}
       </Box>
 
-      {/* Zone de chat et boutons */}
-      <Box sx={{ flex: 1, marginLeft: 2, display: 'flex', flexDirection: 'column' }}>
-        {/* Contenu principal injecté */}
+      <Box sx={{ flex: 1, marginLeft: 2, display: "flex", flexDirection: "column" }}>
         <Outlet />
-
-        {/* Champ de saisie et boutons */}
-        {/* <Box sx={{ display: 'flex', padding: 2 }}>
-          <TextField
-            fullWidth
-            placeholder="Message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <Button variant="contained" color="primary" sx={{ mx: 1 }}>
-            Image
-          </Button>
-          <Button variant="contained" color="primary" onClick={handleSendMessage}>
-            Envoyer
-          </Button>
-        </Box> */}
       </Box>
     </Container>
   );

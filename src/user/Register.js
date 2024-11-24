@@ -47,6 +47,7 @@ export const Register = () => {
             name="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            
           />
           <TextField
             variant="outlined"

@@ -19,8 +19,8 @@ export default async function handler(request) {
 
         // Connexion à la base de données et insertion de l'utilisateur
         const { rowCount } = await sql`
-            INSERT INTO users (username, email, password, external_id) 
-            VALUES (${username}, ${email}, ${hashed64}, ${crypto.randomUUID().toString()})
+            INSERT INTO users (username, email, password, external_id, created_on) 
+            VALUES (${username}, ${email}, ${hashed64}, ${crypto.randomUUID().toString()}, NOW())
         `;
 
         if (rowCount === 1) {

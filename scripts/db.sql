@@ -15,10 +15,6 @@ CREATE TABLE rooms (
    created_by INTEGER NOT NULL
 );
 
-ALTER TABLE users
-ALTER COLUMN created_on
-SET DEFAULT CURRENT_TIMESTAMP;
-
 
 insert into users (username, password, email, created_on, external_id) values ('test', 'gcrjEewWyAuYskG3dd6gFTqsC6/SKRsbTZ+g1XHDO10=', 'test@univ-brest.fr', now(), 'ac7a25a9-bcc5-4fba-8a3d-d42acda26949');
 
